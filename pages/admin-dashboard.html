@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare Admin</a>
+            <ul class="nav-links">
+                <li><a href="admin-dashboard.html">Dashboard</a></li>
+                <li><a href="manage-doctors.html">Manage Doctors</a></li>
+                <li><a href="admin-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-schedules.html">Manage Schedules</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Admin Dashboard</h1>
+            <p class="dashboard-subtitle">System Overview and Management</p>
+        </div>
+
+        <div class="grid grid-4 mb-3">
+            <div class="stats-card">
+                <div class="stats-number" id="totalDoctors">0</div>
+                <div class="stats-label">Total Doctors</div>
+            </div>
+            <div class="stats-card secondary">
+                <div class="stats-number" id="totalPatients">0</div>
+                <div class="stats-label">Total Patients</div>
+            </div>
+            <div class="stats-card warning">
+                <div class="stats-number" id="totalAppointments">0</div>
+                <div class="stats-label">Total Appointments</div>
+            </div>
+            <div class="stats-card danger">
+                <div class="stats-number" id="todayAppointments">0</div>
+                <div class="stats-label">Today's Appointments</div>
+            </div>
+        </div>
+
+        <div class="grid grid-2">
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Quick Actions</h2>
+                    </div>
+                    <div class="card-body">
+                        <a href="add-doctor.html" class="btn btn-primary btn-block mb-2">Add New Doctor</a>
+                        <a href="manage-doctors.html" class="btn btn-secondary btn-block mb-2">Manage Doctors</a>
+                        <a href="admin-all-appointments.html" class="btn btn-outline btn-block mb-2">View All Appointments</a>
+                        <a href="manage-schedules.html" class="btn btn-outline btn-block">Manage Schedules</a>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Doctors</h2>
+                    </div>
+                    <div class="card-body" id="recentDoctors">
+                        <!-- Recent doctors will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">Today's Appointments</h2>
+            </div>
+            <div class="card-body" id="todayAppointmentsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No appointments today</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Check authentication
+        if (!utils.requireAuth('admin')) {
+            window.location.href = '../index.html';
+        }
+
+        // Load statistics
+        const stats = utils.getStatistics();
+        document.getElementById('totalDoctors').textContent = stats.totalDoctors;
+        document.getElementById('totalPatients').textContent = stats.totalPatients;
+        document.getElementById('totalAppointments').textContent = stats.totalAppointments;
+        document.getElementById('todayAppointments').textContent = stats.todayAppointments;
+
+        // Display recent doctors
+        const recentDoctorsContainer = document.getElementById('recentDoctors');
+        const recentDoctors = mockData.doctors.slice(-3).reverse();
+
+        recentDoctors.forEach(doctor => {
+            const doctorItem = document.createElement('div');
+            doctorItem.style.padding = '12px 0';
+            doctorItem.style.borderBottom = '1px solid var(--border-color)';
+            doctorItem.innerHTML = `
+                <div style="font-weight: 600;">${doctor.name}</div>
+                <div style="color: var(--text-light); font-size: 14px;">${doctor.specialty}</div>
+            `;
+            recentDoctorsContainer.appendChild(doctorItem);
+        });
+
+        // Display today's appointments
+        const today = new Date().toISOString().split('T')[0];
+        const todayAppointments = mockData.appointments.filter(apt => apt.date === today)
+            .sort((a, b) => a.time.localeCompare(b.time));
+
+        const todayContainer = document.getElementById('todayAppointmentsList');
+
+        if (todayAppointments.length > 0) {
+            todayContainer.innerHTML = '';
+
+            todayAppointments.forEach(apt => {
+                const doctor = utils.getDoctorById(apt.doctorId);
+                const patient = utils.getPatientById(apt.patientId);
+
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+
+                let statusBadgeClass = 'badge-info';
+                if (apt.status === 'done') statusBadgeClass = 'badge-success';
+                else if (apt.status === 'cancelled') statusBadgeClass = 'badge-danger';
+
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${patient.name} → ${doctor.name}</div>
+                        <span class="badge ${statusBadgeClass}">${apt.status}</span>
+                    </div>
+                    <div class="appointment-info">
+                        <strong>Time:</strong> ${apt.time}<br>
+                        <strong>Doctor:</strong> ${doctor.name} (${doctor.specialty})<br>
+                        <strong>Patient Phone:</strong> ${patient.phone}
+                    </div>
+                `;
+                todayContainer.appendChild(appointmentCard);
+            });
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

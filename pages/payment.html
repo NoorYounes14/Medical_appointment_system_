@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container-small">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Payment Information</h1>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-3">
+                    <strong>Amount to Pay:</strong> $50.00
+                </div>
+
+                <form id="paymentForm">
+                    <div class="form-group">
+                        <label class="form-label" for="cardNumber">Card Number</label>
+                        <input type="text" id="cardNumber" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="cardName">Cardholder Name</label>
+                        <input type="text" id="cardName" class="form-control" placeholder="John Doe" required>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="expiryDate">Expiry Date</label>
+                            <input type="text" id="expiryDate" class="form-control" placeholder="MM/YY" maxlength="5" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="cvv">CVV</label>
+                            <input type="text" id="cvv" class="form-control" placeholder="123" maxlength="3" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="billingAddress">Billing Address</label>
+                        <textarea id="billingAddress" class="form-control" rows="3" placeholder="Street address, City, State, ZIP" required></textarea>
+                    </div>
+
+                    <div class="alert alert-success">
+                        <strong>Secure Payment:</strong> Your payment information is encrypted and secure.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Pay $50.00</button>
+                    <button type="button" class="btn btn-outline btn-block mt-2" onclick="history.back()">Cancel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('patient')) {
+            window.location.href = '../index.html';
+        }
+
+        const pendingAppointment = sessionStorage.getItem('pendingAppointment');
+
+        if (!pendingAppointment) {
+            window.location.href = 'doctor-list.html';
+        }
+
+        // Format card number input - only allow numbers, max 16 digits
+        document.getElementById('cardNumber').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+            value = value.substring(0, 16); // Limit to 16 digits
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
+
+        // Format expiry date input
+        document.getElementById('expiryDate').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value;
+        });
+
+        // Only allow numbers in CVV
+        document.getElementById('cvv').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Handle payment form submission
+        document.getElementById('paymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Get current user and validate age
+            const currentUser = utils.getCurrentUser();
+            const patient = utils.getPatientById(currentUser.id);
+
+            if (patient && patient.dob) {
+                const birthDate = new Date(patient.dob);
+                const today = new Date();
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+
+                // Check if patient is under 12
+                if (age < 12) {
+                    showToast('Patients under 12 years old cannot book appointments. Please contact the hospital directly.', 'error');
+                    return;
+                }
+
+                // Check if patient is under 16 and doesn't have guardian info
+                if (age < 16 && (!patient.guardianName || !patient.guardianPhone)) {
+                    showToast('Patients under 16 require a parent or guardian. Please update your profile with guardian information.', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'patient-profile.html';
+                    }, 2000);
+                    return;
+                }
+            }
+
+            // Validate card number is exactly 16 digits
+            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            if (cardNumber.length !== 16) {
+                showToast('Please enter a valid 16-digit card number.', 'error');
+                return;
+            }
+
+            // Validate CVV is exactly 3 digits
+            const cvv = document.getElementById('cvv').value;
+            if (cvv.length !== 3) {
+                showToast('Please enter a valid 3-digit CVV.', 'error');
+                return;
+            }
+
+            // Simulate payment processing
+            const appointmentData = JSON.parse(pendingAppointment);
+
+            // Book the appointment
+            const result = utils.bookAppointment(appointmentData);
+
+            if (result.error) {
+                showToast(result.error, 'error');
+                // Clear pending appointment on error
+                sessionStorage.removeItem('pendingAppointment');
+                setTimeout(() => {
+                    window.location.href = 'doctor-list.html';
+                }, 2000);
+            } else {
+                // Clear pending appointment
+                sessionStorage.removeItem('pendingAppointment');
+
+                showToast('Payment successful! Your appointment has been booked.', 'success');
+                setTimeout(() => {
+                    window.location.href = 'my-appointments.html';
+                }, 1500);
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

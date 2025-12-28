@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Doctor - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare Admin</a>
+            <ul class="nav-links">
+                <li><a href="admin-dashboard.html">Dashboard</a></li>
+                <li><a href="manage-doctors.html">Manage Doctors</a></li>
+                <li><a href="admin-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-schedules.html">Manage Schedules</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container-small">
+        <a href="manage-doctors.html" class="btn btn-outline mb-3">← Back to Doctors</a>
+
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Edit Doctor</h1>
+            </div>
+            <div class="card-body">
+                <form id="editDoctorForm">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Full Name</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" class="form-control" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="specialty">Specialty</label>
+                        <select id="specialty" class="form-select" required>
+                            <option value="">Select specialty...</option>
+                            <option value="Cardiology">Cardiology</option>
+                            <option value="Dermatology">Dermatology</option>
+                            <option value="Pediatrics">Pediatrics</option>
+                            <option value="Orthopedics">Orthopedics</option>
+                            <option value="Neurology">Neurology</option>
+                            <option value="Psychiatry">Psychiatry</option>
+                            <option value="General Practice">General Practice</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone Number</label>
+                        <input type="tel" id="phone" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="bio">Bio</label>
+                        <textarea id="bio" class="form-control" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="newPassword">New Password (leave blank to keep current)</label>
+                        <input type="password" id="newPassword" class="form-control" minlength="6">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Save Changes</button>
+                    <a href="manage-doctors.html" class="btn btn-outline btn-block mt-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('admin')) {
+            window.location.href = '../index.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const doctorId = urlParams.get('id');
+
+        if (!doctorId) {
+            window.location.href = 'manage-doctors.html';
+        }
+
+        const doctor = utils.getDoctorById(doctorId);
+
+        if (!doctor) {
+            showToast('Doctor not found!', 'error');
+            setTimeout(() => {
+                window.location.href = 'manage-doctors.html';
+            }, 1500);
+        }
+
+        // Populate form
+        document.getElementById('name').value = doctor.name;
+        document.getElementById('email').value = doctor.email;
+        document.getElementById('specialty').value = doctor.specialty;
+        document.getElementById('phone').value = doctor.phone;
+        document.getElementById('bio').value = doctor.bio || '';
+
+        document.getElementById('editDoctorForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const updatedData = {
+                name: document.getElementById('name').value,
+                specialty: document.getElementById('specialty').value,
+                phone: document.getElementById('phone').value,
+                bio: document.getElementById('bio').value
+            };
+
+            const newPassword = document.getElementById('newPassword').value;
+            if (newPassword) {
+                updatedData.password = newPassword;
+            }
+
+            if (utils.updateDoctor(doctorId, updatedData)) {
+                showToast('Doctor updated successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'manage-doctors.html';
+                }, 1500);
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

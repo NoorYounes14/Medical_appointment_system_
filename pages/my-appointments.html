@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Appointments - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">My Appointments</h1>
+            <p class="dashboard-subtitle">View and manage your upcoming appointments</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header flex-between">
+                <h2 class="card-title">Upcoming Appointments</h2>
+                <a href="doctor-list.html" class="btn btn-primary btn-sm">Book New</a>
+            </div>
+            <div class="card-body" id="appointmentsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No upcoming appointments</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('patient')) {
+            window.location.href = '../index.html';
+        }
+
+        const currentUser = utils.getCurrentUser();
+        const appointments = utils.getPatientAppointments(currentUser.id);
+
+        // Get today's date at midnight for accurate comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const upcomingAppointments = appointments.filter(apt => {
+            const appointmentDate = new Date(apt.date);
+            appointmentDate.setHours(0, 0, 0, 0);
+            return apt.status === 'booked' && appointmentDate >= today;
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        const container = document.getElementById('appointmentsList');
+
+        if (upcomingAppointments.length > 0) {
+            container.innerHTML = '';
+
+            upcomingAppointments.forEach(apt => {
+                const doctor = utils.getDoctorById(apt.doctorId);
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${doctor.name}</div>
+                        <span class="badge badge-info">${apt.status}</span>
+                    </div>
+                    <div class="appointment-info">
+                        <strong>Specialty:</strong> ${doctor.specialty}<br>
+                        <strong>Date:</strong> ${utils.formatDate(apt.date)}<br>
+                        <strong>Time:</strong> ${apt.time}<br>
+                        <strong>Payment:</strong> ${apt.paymentMethod === 'visa' ? 'Paid Online' : 'Pay on Visit'}
+                    </div>
+                    ${apt.notes ? `<p style="margin-top: 8px; color: var(--text-light);"><strong>Notes:</strong> ${apt.notes}</p>` : ''}
+                    <div class="flex gap-2 mt-2">
+                        <button class="btn btn-danger btn-sm" onclick="cancelAppointment(${apt.id})">
+                            Cancel Appointment
+                        </button>
+                    </div>
+                `;
+                container.appendChild(appointmentCard);
+            });
+        }
+
+        function cancelAppointment(appointmentId) {
+            showConfirmModal('Are you sure you want to cancel this appointment?', () => {
+                if (utils.cancelAppointment(appointmentId)) {
+                    showToast('Appointment cancelled successfully.', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                }
+            });
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About & Contact - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="../index.html" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">About MediCare</h1>
+            <p class="dashboard-subtitle">Your trusted medical appointment management system</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Our Mission</h2>
+            </div>
+            <div class="card-body">
+                <p style="line-height: 1.8; color: var(--text-dark);">
+                    MediCare is dedicated to simplifying healthcare access by providing an efficient and user-friendly
+                    platform for managing medical appointments. We connect patients with healthcare providers, making
+                    it easier to schedule, manage, and track medical consultations.
+                </p>
+                <p style="line-height: 1.8; color: var(--text-dark); margin-top: 16px;">
+                    Our platform serves three key user groups: patients seeking medical care, doctors managing their
+                    schedules, and administrators overseeing the entire system. Each user benefits from features
+                    tailored to their specific needs.
+                </p>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">Key Features</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-3">
+                    <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <h3 style="color: var(--primary-color); margin-bottom: 8px;">For Patients</h3>
+                        <ul style="color: var(--text-dark); line-height: 1.8;">
+                            <li>Easy registration and login</li>
+                            <li>Browse and search doctors</li>
+                            <li>Book and manage appointments</li>
+                            <li>Online payment options</li>
+                            <li>Rate and review doctors</li>
+                        </ul>
+                    </div>
+                    <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <h3 style="color: var(--secondary-color); margin-bottom: 8px;">For Doctors</h3>
+                        <ul style="color: var(--text-dark); line-height: 1.8;">
+                            <li>Manage availability</li>
+                            <li>View daily schedule</li>
+                            <li>Track appointments</li>
+                            <li>Mark consultations complete</li>
+                            <li>Patient information access</li>
+                        </ul>
+                    </div>
+                    <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+                        <h3 style="color: var(--warning-color); margin-bottom: 8px;">For Admins</h3>
+                        <ul style="color: var(--text-dark); line-height: 1.8;">
+                            <li>Manage doctors</li>
+                            <li>Oversee all appointments</li>
+                            <li>Manage schedules</li>
+                            <li>View system statistics</li>
+                            <li>System administration</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">Contact Us</h2>
+            </div>
+            <div class="card-body">
+                <form id="contactForm">
+                    <div class="grid grid-2">
+                        <div class="form-group">
+                            <label class="form-label" for="name">Full Name</label>
+                            <input type="text" id="name" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email</label>
+                            <input type="email" id="email" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="subject">Subject</label>
+                        <input type="text" id="subject" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="message">Message</label>
+                        <textarea id="message" class="form-control" rows="6" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">Our Location</h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-3">
+                    <div>
+                        <h3 style="margin-bottom: 8px;">Address</h3>
+                        <p style="color: var(--text-light);">
+                            123 Healthcare Avenue<br>
+                            Medical District<br>
+                            City, State 12345
+                        </p>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 8px;">Phone</h3>
+                        <p style="color: var(--text-light);">
+                            Main: (555) 123-4567<br>
+                            Support: (555) 123-4568<br>
+                            Emergency: (555) 123-4569
+                        </p>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 8px;">Email</h3>
+                        <p style="color: var(--text-light);">
+                            info@medicare.com<br>
+                            support@medicare.com<br>
+                            admin@medicare.com
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-body text-center">
+                <p style="color: var(--text-light);">
+                    &copy; 2025 MediCare Medical Appointment System. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            showToast('Thank you for your message! We will get back to you soon.', 'success');
+            this.reset();
+        });
+    </script>
+</body>
+</html>

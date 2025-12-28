@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Availability - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <a href="doctor-list.html" class="btn btn-outline mb-3">← Back to Doctors</a>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="flex" style="gap: 24px; align-items: start;">
+                    <div class="doctor-avatar" id="doctorAvatar" style="font-size: 48px; width: 120px; height: 120px;"></div>
+                    <div style="flex: 1;">
+                        <h1 id="doctorName" style="margin-bottom: 8px;"></h1>
+                        <p id="doctorSpecialty" style="color: var(--text-light); font-size: 18px; margin-bottom: 8px;"></p>
+                        <div class="rating" id="doctorRating" style="font-size: 20px;"></div>
+                        <p id="doctorBio" style="margin-top: 16px; color: var(--text-dark);"></p>
+                        <p style="margin-top: 12px;"><strong>Phone:</strong> <span id="doctorPhone"></span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h2 class="card-title">Available Dates & Times</h2>
+            </div>
+            <div class="card-body" id="availabilityContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No availability at the moment</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('patient')) {
+            window.location.href = '../index.html';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const doctorId = urlParams.get('id');
+
+        if (!doctorId) {
+            window.location.href = 'doctor-list.html';
+        }
+
+        const doctor = utils.getDoctorById(doctorId);
+
+        if (!doctor) {
+            window.location.href = 'doctor-list.html';
+        }
+
+        // Display doctor info
+        const initials = doctor.name.split(' ').map(n => n[0]).join('');
+        document.getElementById('doctorAvatar').textContent = initials;
+        document.getElementById('doctorName').textContent = doctor.name;
+        document.getElementById('doctorSpecialty').textContent = doctor.specialty;
+        document.getElementById('doctorRating').textContent = `⭐ ${doctor.rating.toFixed(1)} Rating`;
+        document.getElementById('doctorBio').textContent = doctor.bio || 'Experienced medical professional';
+        document.getElementById('doctorPhone').textContent = doctor.phone;
+
+        // Display availability - filter out past dates
+        const availabilityContainer = document.getElementById('availabilityContainer');
+
+        // Get today's date at midnight for accurate comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Filter availability to only show future dates
+        const futureAvailability = doctor.availability.filter(dateSlot => {
+            const slotDate = new Date(dateSlot.date);
+            slotDate.setHours(0, 0, 0, 0);
+            return slotDate >= today && dateSlot.slots.length > 0;
+        });
+
+        if (futureAvailability && futureAvailability.length > 0) {
+            availabilityContainer.innerHTML = '';
+
+            futureAvailability.forEach(dateSlot => {
+                const dateCard = document.createElement('div');
+                dateCard.style.marginBottom = '24px';
+
+                dateCard.innerHTML = `
+                    <h3 style="margin-bottom: 12px;">${utils.formatDate(dateSlot.date)}</h3>
+                    <div class="time-slots" id="slots-${dateSlot.date}"></div>
+                `;
+
+                availabilityContainer.appendChild(dateCard);
+
+                const slotsContainer = document.getElementById(`slots-${dateSlot.date}`);
+
+                dateSlot.slots.forEach(time => {
+                    // Check if slot is already booked
+                    const isBooked = mockData.appointments.some(apt =>
+                        apt.doctorId === doctor.id &&
+                        apt.date === dateSlot.date &&
+                        apt.time === time &&
+                        apt.status !== 'cancelled'
+                    );
+
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = `time-slot ${isBooked ? 'disabled' : ''}`;
+                    timeSlot.textContent = time;
+
+                    if (!isBooked) {
+                        timeSlot.addEventListener('click', function() {
+                            window.location.href = `book-appointment.html?doctorId=${doctor.id}&date=${dateSlot.date}&time=${time}`;
+                        });
+                    }
+
+                    slotsContainer.appendChild(timeSlot);
+                });
+            });
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

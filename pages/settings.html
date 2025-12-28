@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links" id="navLinks">
+                <!-- Navigation will be dynamically loaded based on user type -->
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container-small">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Settings</h1>
+            <p class="dashboard-subtitle">Manage your preferences</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Notifications</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label class="form-radio-label">
+                        <input type="checkbox" id="emailNotifications" checked>
+                        Email Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-radio-label">
+                        <input type="checkbox" id="smsNotifications" checked>
+                        SMS Notifications
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-radio-label">
+                        <input type="checkbox" id="reminderNotifications" checked>
+                        Appointment Reminders
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary btn-block mt-3" id="saveSettings">Save Settings</button>
+        <a href="#" class="btn btn-outline btn-block mt-2" id="backBtn">Back to Dashboard</a>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        const currentUser = utils.getCurrentUser();
+
+        if (!currentUser) {
+            window.location.href = '../index.html';
+        }
+
+        // Set up navigation based on user type
+        const navLinks = document.getElementById('navLinks');
+        let dashboardUrl = '';
+
+        if (currentUser.type === 'patient') {
+            dashboardUrl = 'patient-dashboard.html';
+            navLinks.innerHTML = `
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            `;
+        } else if (currentUser.type === 'doctor') {
+            dashboardUrl = 'doctor-dashboard.html';
+            navLinks.innerHTML = `
+                <li><a href="doctor-dashboard.html">Dashboard</a></li>
+                <li><a href="today-schedule.html">Today's Schedule</a></li>
+                <li><a href="doctor-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-availability.html">Manage Availability</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            `;
+        } else if (currentUser.type === 'admin') {
+            dashboardUrl = 'admin-dashboard.html';
+            navLinks.innerHTML = `
+                <li><a href="admin-dashboard.html">Dashboard</a></li>
+                <li><a href="manage-doctors.html">Manage Doctors</a></li>
+                <li><a href="admin-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-schedules.html">Manage Schedules</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            `;
+        }
+
+        document.getElementById('backBtn').href = dashboardUrl;
+
+        // Load saved settings
+        const settings = utils.getSettings();
+
+        // Load notification settings
+        if (settings.emailNotifications !== undefined) {
+            document.getElementById('emailNotifications').checked = settings.emailNotifications;
+        }
+        if (settings.smsNotifications !== undefined) {
+            document.getElementById('smsNotifications').checked = settings.smsNotifications;
+        }
+        if (settings.reminderNotifications !== undefined) {
+            document.getElementById('reminderNotifications').checked = settings.reminderNotifications;
+        }
+
+        // Save settings
+        document.getElementById('saveSettings').addEventListener('click', function() {
+            const newSettings = {
+                emailNotifications: document.getElementById('emailNotifications').checked,
+                smsNotifications: document.getElementById('smsNotifications').checked,
+                reminderNotifications: document.getElementById('reminderNotifications').checked
+            };
+
+            utils.saveSettings(newSettings);
+            showToast('Settings saved successfully!', 'success');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Registration - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="auth-title">Create Patient Account</h1>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label" for="name">Full Name</label>
+                    <input type="text" id="name" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="phone">Phone Number</label>
+                    <input type="tel" id="phone" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Gender</label>
+                    <div class="form-radio-group">
+                        <label class="form-radio-label">
+                            <input type="radio" name="gender" value="male" required> Male
+                        </label>
+                        <label class="form-radio-label">
+                            <input type="radio" name="gender" value="female" required> Female
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="dob">Date of Birth</label>
+                    <input type="date" id="dob" class="form-control" required>
+                </div>
+
+                <div class="form-group" id="ageWarning" style="display: none;">
+                    <div class="alert alert-danger">
+                        Patients under 12 years old cannot register online. Please contact the hospital directly.
+                    </div>
+                </div>
+
+                <div class="form-group" id="guardianSection" style="display: none;">
+                    <div class="alert alert-info">
+                        Patient is between 12-15 years old. A parent or guardian is required for appointments.
+                    </div>
+                    <label class="form-label" for="guardianName">Parent/Guardian Full Name</label>
+                    <input type="text" id="guardianName" class="form-control">
+
+                    <label class="form-label mt-2" for="guardianPhone">Parent/Guardian Phone Number</label>
+                    <input type="tel" id="guardianPhone" class="form-control">
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const dobInput = document.getElementById('dob');
+                        const guardianSection = document.getElementById('guardianSection');
+                        const ageWarning = document.getElementById('ageWarning');
+                        const guardianName = document.getElementById('guardianName');
+                        const guardianPhone = document.getElementById('guardianPhone');
+                        const registerBtn = document.querySelector('button[type="submit"]');
+
+                        // Set min date to 1900-01-01 and max date to today
+                        const today = new Date().toISOString().split('T')[0];
+                        dobInput.setAttribute('min', '1900-01-01');
+                        dobInput.setAttribute('max', today);
+
+                        // Check age when date of birth changes
+                        dobInput.addEventListener('change', function() {
+                            const birthDate = new Date(this.value);
+                            const today = new Date();
+                            let age = today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                age--;
+                            }
+
+                            // Reset all sections
+                            guardianSection.style.display = 'none';
+                            ageWarning.style.display = 'none';
+                            guardianName.required = false;
+                            guardianPhone.required = false;
+                            registerBtn.disabled = false;
+
+                            if (age < 12) {
+                                // Under 12: Show warning and disable registration
+                                ageWarning.style.display = 'block';
+                                registerBtn.disabled = true;
+                            } else if (age < 16) {
+                                // Between 12-15: Require guardian info
+                                guardianSection.style.display = 'block';
+                                guardianName.required = true;
+                                guardianPhone.required = true;
+                            } else {
+                                // 16 and above: Normal registration
+                                guardianName.value = '';
+                                guardianPhone.value = '';
+                            }
+                        });
+                    });
+                </script>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-control" required minlength="6">
+                </div>
+                
+
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Register</button>
+                <a href="../index.html" class="btn btn-outline btn-block mt-2">Back to Login</a>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match!', 'error');
+                return;
+            }
+
+            const patientData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                gender: document.querySelector('input[name="gender"]:checked').value,
+                dob: document.getElementById('dob').value,
+                password: password
+            };
+
+            // Add guardian information if patient is under 16
+            const guardianSection = document.getElementById('guardianSection');
+            if (guardianSection.style.display !== 'none') {
+                patientData.guardianName = document.getElementById('guardianName').value;
+                patientData.guardianPhone = document.getElementById('guardianPhone').value;
+            }
+
+            const result = utils.registerPatient(patientData);
+
+            if (result.success) {
+                showToast('Registration successful! Please login.', 'success');
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500);
+            } else {
+                showToast(result.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
