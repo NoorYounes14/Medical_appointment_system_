@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointment History - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Appointment History</h1>
+            <p class="dashboard-subtitle">View your past appointments and rate doctors</p>
+        </div>
+
+        <div class="card">
+            <div class="card-body" id="historyList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <div class="empty-state-text">No appointment history</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Rate Doctor</h2>
+                <button class="modal-close" onclick="closeRatingModal()">&times;</button>
+            </div>
+            <div style="text-align: center; padding: 20px;">
+                <p id="doctorToRate" style="margin-bottom: 20px; font-size: 18px;"></p>
+                <div class="star-rating" id="starRating">
+                    <span class="star" data-rating="1">★</span>
+                    <span class="star" data-rating="2">★</span>
+                    <span class="star" data-rating="3">★</span>
+                    <span class="star" data-rating="4">★</span>
+                    <span class="star" data-rating="5">★</span>
+                </div>
+                <button class="btn btn-primary mt-3" onclick="submitRating()">Submit Rating</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('patient')) {
+            window.location.href = '../index.html';
+        }
+
+        const currentUser = utils.getCurrentUser();
+        const appointments = utils.getPatientAppointments(currentUser.id);
+
+        // Get today's date at midnight for accurate comparison
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const pastAppointments = appointments.filter(apt => {
+            const appointmentDate = new Date(apt.date);
+            appointmentDate.setHours(0, 0, 0, 0);
+            return apt.status === 'done' || apt.status === 'cancelled' || appointmentDate < today;
+        }).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const container = document.getElementById('historyList');
+
+        let selectedAppointmentId = null;
+        let selectedRating = 0;
+
+        if (pastAppointments.length > 0) {
+            container.innerHTML = '';
+
+            pastAppointments.forEach(apt => {
+                const doctor = utils.getDoctorById(apt.doctorId);
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+
+                let statusBadgeClass = 'badge-success';
+                if (apt.status === 'cancelled') statusBadgeClass = 'badge-danger';
+                else if (apt.status === 'booked') statusBadgeClass = 'badge-warning';
+
+                let ratingHTML = '';
+                if (apt.status === 'done') {
+                    if (apt.rating) {
+                        ratingHTML = `<div style="margin-top: 8px;">Your Rating: ${'⭐'.repeat(apt.rating)}</div>`;
+                    } else {
+                        ratingHTML = `<button class="btn btn-secondary btn-sm mt-2" onclick="openRatingModal(${apt.id}, '${doctor.name}')">Rate Doctor</button>`;
+                    }
+                }
+
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${doctor.name}</div>
+                        <span class="badge ${statusBadgeClass}">${apt.status}</span>
+                    </div>
+                    <div class="appointment-info">
+                        <strong>Specialty:</strong> ${doctor.specialty}<br>
+                        <strong>Date:</strong> ${utils.formatDate(apt.date)}<br>
+                        <strong>Time:</strong> ${apt.time}
+                    </div>
+                    ${apt.notes ? `<p style="margin-top: 8px; color: var(--text-light);"><strong>Notes:</strong> ${apt.notes}</p>` : ''}
+                    ${ratingHTML}
+                `;
+                container.appendChild(appointmentCard);
+            });
+        }
+
+        function openRatingModal(appointmentId, doctorName) {
+            selectedAppointmentId = appointmentId;
+            selectedRating = 0;
+            document.getElementById('doctorToRate').textContent = `How was your experience with ${doctorName}?`;
+            document.querySelectorAll('.star').forEach(star => star.classList.remove('active'));
+            document.getElementById('ratingModal').classList.add('active');
+        }
+
+        function closeRatingModal() {
+            document.getElementById('ratingModal').classList.remove('active');
+        }
+
+        function submitRating() {
+            if (selectedRating === 0) {
+                showToast('Please select a rating', 'error');
+                return;
+            }
+
+            if (utils.rateAppointment(selectedAppointmentId, selectedRating)) {
+                showToast('Thank you for your rating!', 'success');
+                closeRatingModal();
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            }
+        }
+
+        // Star rating interaction
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function() {
+                selectedRating = parseInt(this.dataset.rating);
+                document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+                for (let i = 0; i < selectedRating; i++) {
+                    document.querySelectorAll('.star')[i].classList.add('active');
+                }
+            });
+
+            star.addEventListener('mouseover', function() {
+                const rating = parseInt(this.dataset.rating);
+                document.querySelectorAll('.star').forEach((s, index) => {
+                    if (index < rating) {
+                        s.style.color = '#f59e0b';
+                    } else {
+                        s.style.color = '#d1d5db';
+                    }
+                });
+            });
+        });
+
+        document.getElementById('starRating').addEventListener('mouseleave', function() {
+            document.querySelectorAll('.star').forEach((s, index) => {
+                if (index < selectedRating) {
+                    s.style.color = '#f59e0b';
+                } else {
+                    s.style.color = '#d1d5db';
+                }
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

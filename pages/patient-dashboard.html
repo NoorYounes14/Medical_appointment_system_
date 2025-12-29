@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container dashboard">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Welcome, <span id="patientName"></span></h1>
+            <p class="dashboard-subtitle">Manage your health appointments</p>
+        </div>
+
+        <div class="grid grid-3 mb-3">
+            <div class="stats-card">
+                <div class="stats-number" id="upcomingCount">0</div>
+                <div class="stats-label">Upcoming Appointments</div>
+            </div>
+            <div class="stats-card secondary">
+                <div class="stats-number" id="completedCount">0</div>
+                <div class="stats-label">Completed Appointments</div>
+            </div>
+            <div class="stats-card warning">
+                <div class="stats-number" id="doctorsCount">0</div>
+                <div class="stats-label">Available Doctors</div>
+            </div>
+        </div>
+
+        <div class="grid grid-2">
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Upcoming Appointments</h2>
+                    </div>
+                    <div class="card-body" id="upcomingAppointments">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📅</div>
+                            <div class="empty-state-text">No upcoming appointments</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Quick Actions</h2>
+                    </div>
+                    <div class="card-body">
+                        <a href="doctor-list.html" class="btn btn-primary btn-block mb-2">Book New Appointment</a>
+                        <a href="doctor-list.html" class="btn btn-secondary btn-block mb-2">View All Doctors</a>
+                        <a href="appointment-history.html" class="btn btn-outline btn-block">View History</a>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Notifications</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <strong>Welcome!</strong> Your account is ready. Book your first appointment.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('patient')) {
+            window.location.href = '../index.html';
+        }
+
+        const currentUser = utils.getCurrentUser();
+        document.getElementById('patientName').textContent = currentUser.name;
+
+        // Load statistics
+        const appointments = utils.getPatientAppointments(currentUser.id);
+        const upcomingAppointments = appointments.filter(apt =>
+            apt.status === 'booked' && new Date(apt.date) >= new Date()
+        );
+        const completedAppointments = appointments.filter(apt => apt.status === 'done');
+
+        document.getElementById('upcomingCount').textContent = upcomingAppointments.length;
+        document.getElementById('completedCount').textContent = completedAppointments.length;
+        document.getElementById('doctorsCount').textContent = mockData.doctors.length;
+
+        // Display upcoming appointments
+        const upcomingContainer = document.getElementById('upcomingAppointments');
+        if (upcomingAppointments.length > 0) {
+            upcomingContainer.innerHTML = '';
+            upcomingAppointments.slice(0, 3).forEach(apt => {
+                const doctor = utils.getDoctorById(apt.doctorId);
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${doctor.name}</div>
+                        <span class="badge badge-info">${apt.status}</span>
+                    </div>
+                    <div class="appointment-info">
+                        <strong>Date:</strong> ${utils.formatDate(apt.date)}<br>
+                        <strong>Time:</strong> ${apt.time}<br>
+                        <strong>Specialty:</strong> ${doctor.specialty}
+                    </div>
+                `;
+                upcomingContainer.appendChild(appointmentCard);
+            });
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

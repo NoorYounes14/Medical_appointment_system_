@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Doctors - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="patient-dashboard.html">Dashboard</a></li>
+                <li><a href="doctor-list.html">Find Doctors</a></li>
+                <li><a href="my-appointments.html">My Appointments</a></li>
+                <li><a href="appointment-history.html">History</a></li>
+                <li><a href="patient-profile.html">Profile</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Find Doctors</h1>
+            <p class="dashboard-subtitle">Search and book appointments with our specialists</p>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchName" class="search-input" placeholder="Search by doctor name...">
+            <select id="searchSpecialty" class="form-select" style="width: auto;">
+                <option value="">All Specialties</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Dermatology">Dermatology</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Orthopedics">Orthopedics</option>
+                <option value="Neurology">Neurology</option>
+            </select>
+        </div>
+
+        <div class="grid grid-3" id="doctorsList">
+            <!-- Doctors will be loaded here -->
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('patient')) {
+            window.location.href = '../index.html';
+        }
+
+        let filteredDoctors = [...mockData.doctors];
+
+        function displayDoctors() {
+            const container = document.getElementById('doctorsList');
+            container.innerHTML = '';
+
+            if (filteredDoctors.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        <div class="empty-state-icon">👨‍⚕️</div>
+                        <div class="empty-state-text">No doctors found</div>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredDoctors.forEach(doctor => {
+                const doctorCard = document.createElement('div');
+                doctorCard.className = 'doctor-card';
+
+                const initials = doctor.name.split(' ').map(n => n[0]).join('');
+
+                doctorCard.innerHTML = `
+                    <div class="doctor-avatar">${initials}</div>
+                    <div class="doctor-name">${doctor.name}</div>
+                    <div class="doctor-specialty">${doctor.specialty}</div>
+                    <div class="rating">⭐ ${doctor.rating.toFixed(1)}</div>
+                    <p style="color: var(--text-light); font-size: 14px; margin: 12px 0;">
+                        ${doctor.bio ? doctor.bio.substring(0, 80) + '...' : 'Experienced medical professional'}
+                    </p>
+                    <a href="doctor-availability.html?id=${doctor.id}" class="btn btn-primary btn-block">
+                        View Availability
+                    </a>
+                `;
+
+                container.appendChild(doctorCard);
+            });
+        }
+
+        function filterDoctors() {
+            const searchName = document.getElementById('searchName').value.toLowerCase();
+            const searchSpecialty = document.getElementById('searchSpecialty').value;
+
+            filteredDoctors = mockData.doctors.filter(doctor => {
+                const matchesName = doctor.name.toLowerCase().includes(searchName);
+                const matchesSpecialty = !searchSpecialty || doctor.specialty === searchSpecialty;
+                return matchesName && matchesSpecialty;
+            });
+
+            displayDoctors();
+        }
+
+        // Event listeners
+        document.getElementById('searchName').addEventListener('input', filterDoctors);
+        document.getElementById('searchSpecialty').addEventListener('change', filterDoctors);
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+
+        // Initial display
+        displayDoctors();
+    </script>
+</body>
+</html>

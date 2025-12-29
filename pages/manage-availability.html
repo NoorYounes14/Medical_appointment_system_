@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Availability - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="doctor-dashboard.html">Dashboard</a></li>
+                <li><a href="today-schedule.html">Today's Schedule</a></li>
+                <li><a href="doctor-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-availability.html">Manage Availability</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Manage Availability</h1>
+            <p class="dashboard-subtitle">Set your available dates and time slots</p>
+        </div>
+
+        <div class="grid grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Add Time Slot</h2>
+                </div>
+                <div class="card-body">
+                    <form id="addSlotForm">
+                        <div class="form-group">
+                            <label class="form-label" for="slotDate">Date</label>
+                            <input type="date" id="slotDate" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="slotTime">Time</label>
+                            <select id="slotTime" class="form-select" required>
+                                <option value="">Select time...</option>
+                                <option value="09:00">09:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="13:00">01:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                                <option value="16:00">04:00 PM</option>
+                                <option value="17:00">05:00 PM</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-block">Add Slot</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Current Availability</h2>
+                </div>
+                <div class="card-body" id="availabilityList">
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <div class="empty-state-text">No availability set</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('doctor')) {
+            window.location.href = '../index.html';
+        }
+
+        const currentUser = utils.getCurrentUser();
+        const doctor = utils.getDoctorById(currentUser.id);
+
+        // Set minimum date to today
+        document.getElementById('slotDate').min = new Date().toISOString().split('T')[0];
+
+        function displayAvailability() {
+            const container = document.getElementById('availabilityList');
+
+            if (!doctor.availability || doctor.availability.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📅</div>
+                        <div class="empty-state-text">No availability set</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            doctor.availability.sort((a, b) => new Date(a.date) - new Date(b.date))
+                .forEach(dateSlot => {
+                    const dateCard = document.createElement('div');
+                    dateCard.style.marginBottom = '20px';
+                    dateCard.style.padding = '16px';
+                    dateCard.style.border = '1px solid var(--border-color)';
+                    dateCard.style.borderRadius = '6px';
+
+                    const slotsHTML = dateSlot.slots.map(time => {
+                        // Check if slot is booked
+                        const isBooked = mockData.appointments.some(apt =>
+                            apt.doctorId === doctor.id &&
+                            apt.date === dateSlot.date &&
+                            apt.time === time &&
+                            apt.status !== 'cancelled'
+                        );
+
+                        return `
+                            <div class="time-slot ${isBooked ? 'disabled' : ''}" style="display: inline-block; margin: 4px;">
+                                ${time}
+                                ${!isBooked ? `<button onclick="removeSlot('${dateSlot.date}', '${time}')" style="margin-left: 8px; background: var(--danger-color); color: white; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer;">×</button>` : ''}
+                                ${isBooked ? '<span style="color: var(--text-light); font-size: 12px;">(Booked)</span>' : ''}
+                            </div>
+                        `;
+                    }).join('');
+
+                    dateCard.innerHTML = `
+                        <h3 style="margin-bottom: 12px;">${utils.formatDate(dateSlot.date)}</h3>
+                        <div>${slotsHTML}</div>
+                    `;
+
+                    container.appendChild(dateCard);
+                });
+        }
+
+        // Handle add slot form
+        document.getElementById('addSlotForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const date = document.getElementById('slotDate').value;
+            const time = document.getElementById('slotTime').value;
+
+            if (utils.addTimeSlot(doctor.id, date, time)) {
+                showToast('Time slot added successfully!', 'success');
+                document.getElementById('addSlotForm').reset();
+                displayAvailability();
+            } else {
+                showToast('This time slot already exists!', 'error');
+            }
+        });
+
+        function removeSlot(date, time) {
+            showConfirmModal('Remove this time slot?', function() {
+                if (utils.removeTimeSlot(doctor.id, date, time)) {
+                    showToast('Time slot removed successfully!', 'success');
+                    displayAvailability();
+                }
+            });
+        }
+
+        // Initial display
+        displayAvailability();
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

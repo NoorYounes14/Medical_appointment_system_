@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Today's Schedule - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="doctor-dashboard.html">Dashboard</a></li>
+                <li><a href="today-schedule.html">Today's Schedule</a></li>
+                <li><a href="doctor-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-availability.html">Manage Availability</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Today's Schedule</h1>
+            <p class="dashboard-subtitle" id="todayDate"></p>
+        </div>
+
+        <div class="card">
+            <div class="card-body" id="scheduleList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📅</div>
+                    <div class="empty-state-text">No appointments scheduled for today</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Load data from localStorage first
+        utils.loadData();
+
+        // Check authentication
+        if (!utils.requireAuth('doctor')) {
+            window.location.href = '../index.html';
+        }
+
+        const currentUser = utils.getCurrentUser();
+        const today = new Date();
+        document.getElementById('todayDate').textContent = utils.formatDate(today.toISOString().split('T')[0]);
+
+        const todayAppointments = utils.getTodayAppointments(currentUser.id)
+            .sort((a, b) => a.time.localeCompare(b.time));
+
+        const container = document.getElementById('scheduleList');
+
+        if (todayAppointments.length > 0) {
+            container.innerHTML = '';
+
+            todayAppointments.forEach(apt => {
+                const patient = utils.getPatientById(apt.patientId);
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+
+                let statusBadgeClass = 'badge-info';
+                if (apt.status === 'done') statusBadgeClass = 'badge-success';
+                else if (apt.status === 'cancelled') statusBadgeClass = 'badge-danger';
+
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${patient.name}</div>
+                        <span class="badge ${statusBadgeClass}">${apt.status}</span>
+                    </div>
+                    <div class="appointment-info">
+                        <strong>Time:</strong> ${apt.time}<br>
+                        <strong>Phone:</strong> ${patient.phone}<br>
+                        <strong>Gender:</strong> ${patient.gender}<br>
+                        <strong>Age:</strong> ${new Date().getFullYear() - new Date(patient.dob).getFullYear()} years
+                    </div>
+                    ${apt.notes ? `<p style="margin-top: 8px; color: var(--text-light);"><strong>Notes:</strong> ${apt.notes}</p>` : ''}
+                    ${apt.status === 'booked' ? `
+                        <button class="btn btn-secondary btn-sm mt-2" onclick="markAsDone(${apt.id})">
+                            Mark as Done
+                        </button>
+                    ` : ''}
+                `;
+                container.appendChild(appointmentCard);
+            });
+        }
+
+        function markAsDone(appointmentId) {
+            showConfirmModal('Mark this appointment as completed?', function() {
+                if (utils.markAppointmentDone(appointmentId)) {
+                    showToast('Appointment marked as done.', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                }
+            });
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>

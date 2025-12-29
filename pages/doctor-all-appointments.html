@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Appointments - Medical Appointment System</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <a href="#" class="logo">MediCare</a>
+            <ul class="nav-links">
+                <li><a href="doctor-dashboard.html">Dashboard</a></li>
+                <li><a href="today-schedule.html">Today's Schedule</a></li>
+                <li><a href="doctor-all-appointments.html">All Appointments</a></li>
+                <li><a href="manage-availability.html">Manage Availability</a></li>
+                <li><a href="settings.html">Settings</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">All Appointments</h1>
+            <p class="dashboard-subtitle">View past and future appointments</p>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="flex gap-2">
+                    <button class="btn btn-primary btn-sm" onclick="filterAppointments('all')">All</button>
+                    <button class="btn btn-outline btn-sm" onclick="filterAppointments('upcoming')">Upcoming</button>
+                    <button class="btn btn-outline btn-sm" onclick="filterAppointments('past')">Past</button>
+                    <button class="btn btn-outline btn-sm" onclick="filterAppointments('cancelled')">Cancelled</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body" id="appointmentsList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <div class="empty-state-text">No appointments found</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/app.js"></script>
+    <script>
+        // Check authentication
+        if (!utils.requireAuth('doctor')) {
+            window.location.href = '../index.html';
+        }
+
+        const currentUser = utils.getCurrentUser();
+        const allAppointments = utils.getDoctorAppointments(currentUser.id)
+            .sort((a, b) => new Date(b.date) - new Date(a.date) || b.time.localeCompare(a.time));
+
+        let currentFilter = 'all';
+
+        function displayAppointments(appointments) {
+            const container = document.getElementById('appointmentsList');
+
+            if (appointments.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-text">No appointments found</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+
+            appointments.forEach(apt => {
+                const patient = utils.getPatientById(apt.patientId);
+                const appointmentCard = document.createElement('div');
+                appointmentCard.className = 'appointment-card';
+
+                let statusBadgeClass = 'badge-info';
+                if (apt.status === 'done') statusBadgeClass = 'badge-success';
+                else if (apt.status === 'cancelled') statusBadgeClass = 'badge-danger';
+
+                appointmentCard.innerHTML = `
+                    <div class="appointment-header">
+                        <div class="appointment-title">${patient.name}</div>
+                        <span class="badge ${statusBadgeClass}">${apt.status}</span>
+                    </div>
+                    <div class="appointment-info">
+                        <strong>Date:</strong> ${utils.formatDate(apt.date)}<br>
+                        <strong>Time:</strong> ${apt.time}<br>
+                        <strong>Phone:</strong> ${patient.phone}<br>
+                        <strong>Payment:</strong> ${apt.paymentMethod === 'visa' ? 'Paid Online' : 'Pay on Visit'}
+                    </div>
+                    ${apt.notes ? `<p style="margin-top: 8px; color: var(--text-light);"><strong>Notes:</strong> ${apt.notes}</p>` : ''}
+                `;
+                container.appendChild(appointmentCard);
+            });
+        }
+
+        function filterAppointments(filter) {
+            currentFilter = filter;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let filtered = allAppointments;
+
+            if (filter === 'upcoming') {
+                filtered = allAppointments.filter(apt =>
+                    apt.status === 'booked' && new Date(apt.date) >= today
+                );
+            } else if (filter === 'past') {
+                filtered = allAppointments.filter(apt =>
+                    apt.status === 'done' || new Date(apt.date) < today
+                );
+            } else if (filter === 'cancelled') {
+                filtered = allAppointments.filter(apt => apt.status === 'cancelled');
+            }
+
+            // Update button styles
+            document.querySelectorAll('.card-body .btn').forEach(btn => {
+                btn.className = 'btn btn-outline btn-sm';
+            });
+            event.target.className = 'btn btn-primary btn-sm';
+
+            displayAppointments(filtered);
+        }
+
+        // Initial display
+        displayAppointments(allAppointments);
+
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            utils.logout();
+        });
+    </script>
+</body>
+</html>
